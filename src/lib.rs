@@ -41,7 +41,9 @@ pub extern "C" fn HookShaders() {
                                                     &mut context.swapchain, &mut context.device, ptr::null_mut(), &mut context.device_context) };
 
     if ret >= 0 {
-        apply_hooks(&context).unwrap();
+        if apply_hooks(&context).is_err() {
+            println!("Error when applying hooks, program can become unstable!")
+        }
         tear_down(&context);
     }
 }
@@ -58,7 +60,8 @@ fn setup() -> Context {
 
 fn apply_hooks(contex: &Context) -> Result<(), Error>{
     //Here be dragons
-    let vtable = unsafe { (contex.device.as_ref().unwrap()).lpVtbl.as_ref().unwrap() };
+    let device = unsafe { contex.device.as_ref().ok_or(Error::InvalidCode)? };
+    let vtable = unsafe{ device.lpVtbl.as_ref().ok_or(Error::InvalidCode)? };
     let fn_vertex = unsafe { mem::transmute::<_, CCreateVertexShaderFn>(vtable.CreateVertexShader) };
     println!("Vertex Original {:p}", fn_vertex as *const ());
     println!("Vertex Detoured {:p}", shaders::detoured_create_vertex_shader as *const ());
@@ -78,6 +81,7 @@ fn apply_hooks(contex: &Context) -> Result<(), Error>{
 }
 
 fn tear_down(contex: &Context) {
+    //Should actually panic here if for some reasons these cannot be unwrapped
     if !contex.device.is_null() {
         unsafe { contex.device.as_ref().unwrap().Release() };
     }
