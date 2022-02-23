@@ -9,4 +9,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 "detour" = "0.8.1"
+"md5" = "0.7"
 "winapi" = { version = "0.3.9", features = ["winuser", "std", "libloaderapi", "d3d11"] }
